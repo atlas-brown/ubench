@@ -1,18 +1,20 @@
 package main
 
 import (
-	"net/http"
-	"fmt"
 	"context"
+	"fmt"
+	"net/http"
+
 	"github.com/atlas/slowpoke/pkg/invoke"
 	"github.com/atlas/slowpoke/pkg/synthetic"
+
 	// "github.com/goccy/go-json"
-	"sync"
 	"math/rand"
+	"sync"
 )
 
 func pickDynamicService(calledServices []synthetic.CalledService) string {
-	
+
 	type s_p_pair struct {
 		service_name string
 		probability  int
@@ -29,7 +31,7 @@ func pickDynamicService(calledServices []synthetic.CalledService) string {
 
 	// if only one service is available, add a dummy service to make the service prob as p/100
 	// A single dynamic service case
-	if (len(service_prob)==1) {
+	if len(service_prob) == 1 {
 		sum_prob = 100
 		service_prob = append(service_prob, s_p_pair{"", sum_prob})
 	}
@@ -48,8 +50,7 @@ func pickDynamicService(calledServices []synthetic.CalledService) string {
 	return picked_service
 }
 
-
-func execParallel(calledServices []synthetic.CalledService, request  *http.Request) map[string]string {
+func execParallel(calledServices []synthetic.CalledService, request *http.Request) map[string]string {
 
 	// pick dynamic service
 	picked_service := pickDynamicService(calledServices)
@@ -70,7 +71,7 @@ func execParallel(calledServices []synthetic.CalledService, request  *http.Reque
 				if service.Protocol == "grpc" {
 					resp = invoke.InvokeGRPC(context.Background(), service.Service, service.Endpoint, "")
 				} else {
-					respRaw := invoke.Invoke[Response](request.Context(), service.Service, service.Endpoint, "")
+					respRaw := invoke.Invoke[Response](request.Context(), service.Service, service.Endpoint, "", *request)
 					resp = fmt.Sprintf("CPUResp: %s | NETResp : %s", respRaw.CPUResp, respRaw.NetworkResp)
 				}
 				key := fmt.Sprintf("%s [%s,%d]", service.Service, service.Endpoint, i)
@@ -84,7 +85,7 @@ func execParallel(calledServices []synthetic.CalledService, request  *http.Reque
 	return respMap
 }
 
-func execSequential(calledServices []synthetic.CalledService, request  *http.Request) map[string]string {
+func execSequential(calledServices []synthetic.CalledService, request *http.Request) map[string]string {
 
 	// pick dynamic service
 	picked_service := pickDynamicService(calledServices)
@@ -100,7 +101,7 @@ func execSequential(calledServices []synthetic.CalledService, request  *http.Req
 			if service.Protocol == "grpc" {
 				resp = invoke.InvokeGRPC(context.Background(), service.Service, service.Endpoint, "")
 			} else {
-				respRaw := invoke.Invoke[Response](request.Context(), service.Service, service.Endpoint, "")
+				respRaw := invoke.Invoke[Response](request.Context(), service.Service, service.Endpoint, "", *request)
 				resp = fmt.Sprintf("CPUResp: %s | NETResp : %s", respRaw.CPUResp, respRaw.NetworkResp)
 			}
 			key := fmt.Sprintf("%s [%s,%d]", service.Service, service.Endpoint, i)
