@@ -7,6 +7,7 @@ import (
 
 	"github.com/atlas/slowpoke/pkg/invoke"
 	"github.com/atlas/slowpoke/pkg/synthetic"
+	"google.golang.org/grpc/metadata"
 
 	// "github.com/goccy/go-json"
 	"math/rand"
@@ -50,7 +51,19 @@ func pickDynamicService(calledServices []synthetic.CalledService) string {
 	return picked_service
 }
 
-func execParallel(calledServices []synthetic.CalledService, request *http.Request) map[string]string {
+func getRequestIDFromIncomingGRPC(ctx context.Context) (string, bool) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", false
+	}
+	vals := md.Get("x-request-id")
+	if len(vals) == 0 {
+		return "", false
+	}
+	return vals[0], true
+}
+
+func execParallel(calledServices []synthetic.CalledService, request *http.Request, grpc_ctx *context.Context) map[string]string {
 
 	// pick dynamic service
 	picked_service := pickDynamicService(calledServices)
@@ -69,7 +82,25 @@ func execParallel(calledServices []synthetic.CalledService, request *http.Reques
 				defer wg.Done()
 				var resp string
 				if service.Protocol == "grpc" {
-					resp = invoke.InvokeGRPC(context.Background(), service.Service, service.Endpoint, "")
+					// 1) Choose a base ctx safely
+					var ctx context.Context
+					if grpc_ctx != nil && *grpc_ctx != nil {
+						ctx = *grpc_ctx
+					} else if request != nil {
+						ctx = request.Context()
+					} else {
+						ctx = context.Background()
+					}
+
+					// 2) Propagate x-request-id (prefer incoming gRPC -> fallback HTTP)
+					if rid, ok := getRequestIDFromIncomingGRPC(ctx); ok {
+						ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", rid)
+					} else if request != nil {
+						if rid := request.Header.Get("x-request-id"); rid != "" {
+							ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", rid)
+						}
+					}
+					resp = invoke.InvokeGRPC(ctx, service.Service, service.Endpoint, "")
 				} else {
 					respRaw := invoke.Invoke[Response](request.Context(), service.Service, service.Endpoint, "", *request)
 					resp = fmt.Sprintf("CPUResp: %s | NETResp : %s", respRaw.CPUResp, respRaw.NetworkResp)
@@ -85,7 +116,7 @@ func execParallel(calledServices []synthetic.CalledService, request *http.Reques
 	return respMap
 }
 
-func execSequential(calledServices []synthetic.CalledService, request *http.Request) map[string]string {
+func execSequential(calledServices []synthetic.CalledService, request *http.Request, grpc_ctx *context.Context) map[string]string {
 
 	// pick dynamic service
 	picked_service := pickDynamicService(calledServices)
@@ -99,7 +130,25 @@ func execSequential(calledServices []synthetic.CalledService, request *http.Requ
 		for i := 0; i < service.TrafficForwardRatio; i++ {
 			var resp string
 			if service.Protocol == "grpc" {
-				resp = invoke.InvokeGRPC(context.Background(), service.Service, service.Endpoint, "")
+				// 1) Choose a base ctx safely
+				var ctx context.Context
+				if grpc_ctx != nil && *grpc_ctx != nil {
+					ctx = *grpc_ctx
+				} else if request != nil {
+					ctx = request.Context()
+				} else {
+					ctx = context.Background()
+				}
+
+				// 2) Propagate x-request-id (prefer incoming gRPC -> fallback HTTP)
+				if rid, ok := getRequestIDFromIncomingGRPC(ctx); ok {
+					ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", rid)
+				} else if request != nil {
+					if rid := request.Header.Get("x-request-id"); rid != "" {
+						ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", rid)
+					}
+				}
+				resp = invoke.InvokeGRPC(ctx, service.Service, service.Endpoint, "")
 			} else {
 				respRaw := invoke.Invoke[Response](request.Context(), service.Service, service.Endpoint, "", *request)
 				resp = fmt.Sprintf("CPUResp: %s | NETResp : %s", respRaw.CPUResp, respRaw.NetworkResp)
@@ -111,14 +160,14 @@ func execSequential(calledServices []synthetic.CalledService, request *http.Requ
 	return respMap
 }
 
-func execNetwork(request *http.Request, endpoint *synthetic.Endpoint) map[string]string {
+func execNetwork(request *http.Request, grpc_ctx *context.Context, endpoint *synthetic.Endpoint) map[string]string {
 	if endpoint.NetworkComplexity == nil {
 		return map[string]string{"nil": "No network complexity"}
 	}
 
 	if endpoint.NetworkComplexity.ForwardRequests == "asynchronous" {
-		return execParallel(endpoint.NetworkComplexity.CalledServices, request)
+		return execParallel(endpoint.NetworkComplexity.CalledServices, request, grpc_ctx)
 	} else {
-		return execSequential(endpoint.NetworkComplexity.CalledServices, request)
+		return execSequential(endpoint.NetworkComplexity.CalledServices, request, grpc_ctx)
 	}
 }

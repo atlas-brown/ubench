@@ -12,7 +12,9 @@ import (
 	pb "github.com/atlas/slowpoke/pkg/pb"
 	"github.com/atlas/slowpoke/pkg/utility"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
+
 
 var (
 	grpcConns    map[string]*grpc.ClientConn = make(map[string]*grpc.ClientConn)
@@ -62,6 +64,18 @@ func InitGRPCConn(app string) *grpc.ClientConn {
 	return conn
 }
 
+func requestIDFromContext(ctx context.Context) (string, bool) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", false
+	}
+	vals := md.Get("x-request-id")
+	if len(vals) == 0 {
+		return "", false
+	}
+	return vals[0], true
+}
+
 func InvokeGRPC(ctx context.Context, app string, method string, input interface{}) string {
 	var grpcConn *grpc.ClientConn
 
@@ -78,6 +92,18 @@ func InvokeGRPC(ctx context.Context, app string, method string, input interface{
 		}
 		grpcConn = grpcConns[app]
 		grpcConnLock.Unlock()
+	}
+
+	// // Extract x-request-id from incoming gRPC context
+	// if rid, ok := requestIDFromContext(ctx); ok {
+	// 	ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", rid)
+	// }
+
+	if rid, ok := requestIDFromContext(ctx); ok {
+		outMD, _ := metadata.FromOutgoingContext(ctx)
+		outMD = outMD.Copy()
+		outMD.Set("x-request-id", rid)
+		ctx = metadata.NewOutgoingContext(ctx, outMD)
 	}
 
 	client := pb.NewSimpleClient(grpcConn)
