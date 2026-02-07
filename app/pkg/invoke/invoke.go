@@ -12,6 +12,8 @@ import (
 	pb "github.com/atlas/slowpoke/pkg/pb"
 	"github.com/atlas/slowpoke/pkg/utility"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+        "google.golang.org/grpc/status"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -108,8 +110,15 @@ func InvokeGRPC(ctx context.Context, app string, method string, input interface{
 
 	client := pb.NewSimpleClient(grpcConn)
 	resp_, err := client.SimpleRPC(ctx, &pb.SimpleRequest{Endpoint: method})
-	if err != nil {
-		panic(err)
-	}
+        if err != nil {
+            // Treat expected cancellations/timeouts as non-fatal
+            if st, ok := status.FromError(err); ok {
+                switch st.Code() {
+                case codes.Canceled, codes.DeadlineExceeded:
+                    return ""
+                }
+            }
+            panic(err)
+        }
 	return resp_.Resp
 }
