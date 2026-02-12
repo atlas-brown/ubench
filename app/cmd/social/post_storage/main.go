@@ -3,11 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/social"
-	// "github.com/eniac/mucache/pkg/cm"
-	"github.com/eniac/mucache/pkg/common"
-	"github.com/eniac/mucache/pkg/wrappers"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/internal/social"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 
 	"net/http"
 	"runtime"
@@ -21,7 +18,6 @@ func heartbeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func storePost(ctx context.Context, req *social.StorePostRequest) *social.StorePostResponse {
-	// slowpoke.SlowpokeCheck("storePost")
 	postId := social.StorePost(ctx, req.CreatorId, req.Text)
 	//fmt.Println("Post stored: " + postId)
 	resp := social.StorePostResponse{PostId: postId}
@@ -29,7 +25,6 @@ func storePost(ctx context.Context, req *social.StorePostRequest) *social.StoreP
 }
 
 func storePostMulti(ctx context.Context, req *social.StorePostMultiRequest) *social.StorePostMultiResponse {
-	// slowpoke.SlowpokeCheck("storePostMulti")
 	postIds := social.StorePostMulti(ctx, req.CreatorId, req.Text, req.Number)
 	//fmt.Println("Post stored: " + postId)
 	resp := social.StorePostMultiResponse{PostIds: postIds}
@@ -37,7 +32,6 @@ func storePostMulti(ctx context.Context, req *social.StorePostMultiRequest) *soc
 }
 
 func readPost(ctx context.Context, req *social.ReadPostRequest) *social.ReadPostResponse {
-	// slowpoke.SlowpokeCheck("readPost")
 	post := social.ReadPost(ctx, req.PostId)
 	//fmt.Printf("Post read: %+v\n", post)
 	resp := social.ReadPostResponse{Post: post}
@@ -45,7 +39,6 @@ func readPost(ctx context.Context, req *social.ReadPostRequest) *social.ReadPost
 }
 
 func readPosts(ctx context.Context, req *social.ReadPostsRequest) *social.ReadPostsResponse {
-	// slowpoke.SlowpokeCheck("readPosts")
 	posts := social.ReadPosts(ctx, req.PostIds)
 	//fmt.Printf("Posts read: %+v\n", posts)
 	resp := social.ReadPostsResponse{Posts: posts}
@@ -53,23 +46,12 @@ func readPosts(ctx context.Context, req *social.ReadPostsRequest) *social.ReadPo
 }
 
 func main() {
-	if common.ShardEnabled {
-		fmt.Println(runtime.GOMAXPROCS(1))
-	} else {
-		fmt.Println(runtime.GOMAXPROCS(8))
-	}
-	fmt.Println("Max procs: ", runtime.GOMAXPROCS(0))
-	// go cm.ZmqProxy()
+	fmt.Println("Max procs: ", runtime.GOMAXPROCS(8))
 	http.HandleFunc("/heartbeat", heartbeat)
-	// http.HandleFunc("/store_post", wrappers.NonROWrapper[social.StorePostRequest, social.StorePostResponse](storePost))
-	http.HandleFunc("/store_post", wrappers.SlowpokeWrapper[social.StorePostRequest, social.StorePostResponse](storePost, "store_post"))
-	// http.HandleFunc("/store_post_multi", wrappers.NonROWrapper[social.StorePostMultiRequest, social.StorePostMultiResponse](storePostMulti))
-	http.HandleFunc("/store_post_multi", wrappers.SlowpokeWrapper[social.StorePostMultiRequest, social.StorePostMultiResponse](storePostMulti, "store_post_multi"))
-	// http.HandleFunc("/ro_read_post", wrappers.ROWrapper[social.ReadPostRequest, social.ReadPostResponse](readPost))
-	http.HandleFunc("/ro_read_post", wrappers.SlowpokeWrapper[social.ReadPostRequest, social.ReadPostResponse](readPost, "ro_read_post"))
-	// http.HandleFunc("/ro_read_posts", wrappers.ROWrapper[social.ReadPostsRequest, social.ReadPostsResponse](readPosts))
-	http.HandleFunc("/ro_read_posts", wrappers.SlowpokeWrapper[social.ReadPostsRequest, social.ReadPostsResponse](readPosts, "ro_read_posts"))
-	slowpoke.SlowpokeInit()
+	http.HandleFunc("/store_post", wrappers.Wrapper[social.StorePostRequest, social.StorePostResponse](storePost))
+	http.HandleFunc("/store_post_multi", wrappers.Wrapper[social.StorePostMultiRequest, social.StorePostMultiResponse](storePostMulti))
+	http.HandleFunc("/ro_read_post", wrappers.Wrapper[social.ReadPostRequest, social.ReadPostResponse](readPost))
+	http.HandleFunc("/ro_read_posts", wrappers.Wrapper[social.ReadPostsRequest, social.ReadPostsResponse](readPosts))
 	fmt.Println("Starting server on port 3000")
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {

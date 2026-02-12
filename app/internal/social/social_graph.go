@@ -2,13 +2,12 @@ package social
 
 import (
 	"context"
-	// "github.com/eniac/mucache/pkg/state"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/state"
 )
 
 func GetFollowers(ctx context.Context, userId string) []string {
 	// sg, err := state.GetState[SGVertex](ctx, userId)
-	sg, err := slowpoke.GetState[SGVertex](ctx, userId)
+	sg, err := state.GetState[SGVertex](ctx, userId)
 	if err != nil {
 		panic(err)
 	}
@@ -17,7 +16,7 @@ func GetFollowers(ctx context.Context, userId string) []string {
 
 func GetFollowees(ctx context.Context, userId string) []string {
 	// sg, err := state.GetState[SGVertex](ctx, userId)
-	sg, err := slowpoke.GetState[SGVertex](ctx, userId)
+	sg, err := state.GetState[SGVertex](ctx, userId)
 	if err != nil {
 		panic(err)
 	}
@@ -26,7 +25,7 @@ func GetFollowees(ctx context.Context, userId string) []string {
 
 func Follow(ctx context.Context, followerId string, followeeId string) {
 	// sg, err := state.GetState[SGVertex](ctx, followerId)
-	sg, err := slowpoke.GetState[SGVertex](ctx, followerId)
+	sg, err := state.GetState[SGVertex](ctx, followerId)
 	if err != nil {
 		sg = SGVertex{
 			UserId:    followerId,
@@ -36,10 +35,10 @@ func Follow(ctx context.Context, followerId string, followeeId string) {
 	}
 	sg.Followees = append(sg.Followees, followeeId)
 	// state.SetState(ctx, followerId, sg)
-	slowpoke.SetState(ctx, followerId, sg)
+	state.SetState(ctx, followerId, sg)
 
 	// sg, err = state.GetState[SGVertex](ctx, followeeId)
-	sg, err = slowpoke.GetState[SGVertex](ctx, followeeId)
+	sg, err = state.GetState[SGVertex](ctx, followeeId)
 	if err != nil {
 		sg = SGVertex{
 			UserId:    followeeId,
@@ -52,7 +51,7 @@ func Follow(ctx context.Context, followerId string, followeeId string) {
 	}
 	sg.Followers = append(sg.Followers, followerId)
 	// state.SetState(ctx, followeeId, sg)
-	slowpoke.SetState(ctx, followeeId, sg)
+	state.SetState(ctx, followeeId, sg)
 }
 
 // Only used for populating
@@ -69,7 +68,7 @@ func FollowMulti(ctx context.Context, userId string, followerIds []string, follo
 		sg.Followees = sg.Followees[:10]
 	}
 	// state.SetState(ctx, userId, sg)
-	slowpoke.SetState(ctx, userId, sg)
+	state.SetState(ctx, userId, sg)
 }
 
 func InsertUser(ctx context.Context, userId string) {
@@ -78,5 +77,5 @@ func InsertUser(ctx context.Context, userId string) {
 		Followees: []string{},
 	}
 	// state.SetState(ctx, userId, sg)
-	slowpoke.SetState(ctx, userId, sg)
+	state.SetState(ctx, userId, sg)
 }
