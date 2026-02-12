@@ -37,7 +37,6 @@ func execTask(request *http.Request, grpc_ctx *context.Context, endpoint *synthe
 }
 
 func (handler endpointHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	fmt.Println("called")
 	response := execTask(request, nil, handler.endpoint)
 	utility.DumpJson(response, writer)
 }
