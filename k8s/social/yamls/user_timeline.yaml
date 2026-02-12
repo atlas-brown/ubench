@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "usertimeline"
+  labels:
+    app: "usertimeline"
+spec:
+  selector:
+    app: "usertimeline"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "usertimeline"
+  labels:
+    app: "usertimeline"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "usertimeline"
+  template:
+    metadata:
+      labels:
+        app: "usertimeline"
+    spec:
+      containers:
+        - name: "usertimeline"
+          image: yizhengx/ubench:social
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "user_timeline"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

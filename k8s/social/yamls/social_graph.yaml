@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "socialgraph"
+  labels:
+    app: "socialgraph"
+spec:
+  selector:
+    app: "socialgraph"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "socialgraph"
+  labels:
+    app: "socialgraph"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "socialgraph"
+  template:
+    metadata:
+      labels:
+        app: "socialgraph"
+    spec:
+      containers:
+        - name: "socialgraph"
+          image: yizhengx/ubench:social
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "social_graph"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

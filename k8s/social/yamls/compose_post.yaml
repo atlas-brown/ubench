@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "composepost"
+  labels:
+    app: "composepost"
+spec:
+  selector:
+    app: "composepost"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "composepost"
+  labels:
+    app: "composepost"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "composepost"
+  template:
+    metadata:
+      labels:
+        app: "composepost"
+    spec:
+      containers:
+        - name: "composepost"
+          image: yizhengx/ubench:social
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "compose_post"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

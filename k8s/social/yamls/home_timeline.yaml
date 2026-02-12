@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "hometimeline"
+  labels:
+    app: "hometimeline"
+spec:
+  selector:
+    app: "hometimeline"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "hometimeline"
+  labels:
+    app: "hometimeline"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "hometimeline"
+  template:
+    metadata:
+      labels:
+        app: "hometimeline"
+    spec:
+      containers:
+        - name: "hometimeline"
+          image: yizhengx/ubench:social
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "home_timeline"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

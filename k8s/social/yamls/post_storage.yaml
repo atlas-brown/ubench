@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "poststorage"
+  labels:
+    app: "poststorage"
+spec:
+  selector:
+    app: "poststorage"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "poststorage"
+  labels:
+    app: "poststorage"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "poststorage"
+  template:
+    metadata:
+      labels:
+        app: "poststorage"
+    spec:
+      containers:
+        - name: "poststorage"
+          image: yizhengx/ubench:social
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "post_storage"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always
