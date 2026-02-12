@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "movieid"
+  labels:
+    app: "movieid"
+spec:
+  selector:
+    app: "movieid"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "movieid"
+  labels:
+    app: "movieid"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "movieid"
+  template:
+    metadata:
+      labels:
+        app: "movieid"
+    spec:
+      containers:
+        - name: "movieid"
+          image: yizhengx/ubench:movie
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "movie_id"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

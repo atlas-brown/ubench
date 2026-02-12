@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "page"
+  labels:
+    app: "page"
+spec:
+  selector:
+    app: "page"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "page"
+  labels:
+    app: "page"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "page"
+  template:
+    metadata:
+      labels:
+        app: "page"
+    spec:
+      containers:
+        - name: "page"
+          image: yizhengx/ubench:movie
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "page"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

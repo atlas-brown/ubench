@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "composereview"
+  labels:
+    app: "composereview"
+spec:
+  selector:
+    app: "composereview"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "composereview"
+  labels:
+    app: "composereview"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "composereview"
+  template:
+    metadata:
+      labels:
+        app: "composereview"
+    spec:
+      containers:
+        - name: "composereview"
+          image: yizhengx/ubench:movie
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "compose_review"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

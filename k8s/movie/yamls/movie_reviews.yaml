@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "moviereviews"
+  labels:
+    app: "moviereviews"
+spec:
+  selector:
+    app: "moviereviews"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "moviereviews"
+  labels:
+    app: "moviereviews"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "moviereviews"
+  template:
+    metadata:
+      labels:
+        app: "moviereviews"
+    spec:
+      containers:
+        - name: "moviereviews"
+          image: yizhengx/ubench:movie
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "movie_reviews"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "reviewstorage"
+  labels:
+    app: "reviewstorage"
+spec:
+  selector:
+    app: "reviewstorage"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "reviewstorage"
+  labels:
+    app: "reviewstorage"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "reviewstorage"
+  template:
+    metadata:
+      labels:
+        app: "reviewstorage"
+    spec:
+      containers:
+        - name: "reviewstorage"
+          image: yizhengx/ubench:movie
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "review_storage"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

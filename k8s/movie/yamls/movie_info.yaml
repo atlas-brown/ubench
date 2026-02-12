@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "movieinfo"
+  labels:
+    app: "movieinfo"
+spec:
+  selector:
+    app: "movieinfo"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "movieinfo"
+  labels:
+    app: "movieinfo"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "movieinfo"
+  template:
+    metadata:
+      labels:
+        app: "movieinfo"
+    spec:
+      containers:
+        - name: "movieinfo"
+          image: yizhengx/ubench:movie
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "movie_info"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

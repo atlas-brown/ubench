@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "plot"
+  labels:
+    app: "plot"
+spec:
+  selector:
+    app: "plot"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "plot"
+  labels:
+    app: "plot"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "plot"
+  template:
+    metadata:
+      labels:
+        app: "plot"
+    spec:
+      containers:
+        - name: "plot"
+          image: yizhengx/ubench:movie
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "plot"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

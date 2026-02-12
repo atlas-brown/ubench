@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "castinfo"
+  labels:
+    app: "castinfo"
+spec:
+  selector:
+    app: "castinfo"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "castinfo"
+  labels:
+    app: "castinfo"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "castinfo"
+  template:
+    metadata:
+      labels:
+        app: "castinfo"
+    spec:
+      containers:
+        - name: "castinfo"
+          image: yizhengx/ubench:movie
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "cast_info"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always
