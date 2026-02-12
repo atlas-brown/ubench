@@ -84,8 +84,9 @@ run_test() {
 
     if [[ $benchmark != "boutique" && $benchmark != "synthetic" ]]; then
         echo "[run.sh] Starting the rust proxy first for $benchmark"
-        kubectl exec $ubuntu_client -- bash -c "/mucache/proxy/target/release/proxy ${benchmark} &"
+        kubectl exec $ubuntu_client -- bash -c "/mucache/proxy/target/release/proxy ${benchmark} >/tmp/proxy.log 2>&1 &"
         sleep 3
+        kubectl exec $ubuntu_client -- cat /tmp/proxy.log
     fi
 
     echo "[run.sh] Running the test"
