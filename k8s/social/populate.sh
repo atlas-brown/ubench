@@ -2,6 +2,8 @@
 
 cd $(dirname $0)
 
+pip3 install progress requests
+
 # Get the IP address of a service
 function kip() {
   local service
