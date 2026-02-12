@@ -1,0 +1,48 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "profile"
+  labels:
+    app: "profile"
+spec:
+  selector:
+    app: "profile"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "profile"
+  labels:
+    app: "profile"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "profile"
+  template:
+    metadata:
+      labels:
+        app: "profile"
+    spec:
+      containers:
+        - name: "profile"
+          image: yizhengx/ubench:hotel
+          securityContext:
+            capabilities:
+              add:
+                - SYS_NICE
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "profile"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

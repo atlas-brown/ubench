@@ -1,0 +1,50 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "search"
+  labels:
+    app: "search"
+spec:
+  selector:
+    app: "search"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "search"
+  labels:
+    app: "search"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "search"
+  template:
+    metadata:
+      labels:
+        app: "search"
+    spec:
+      containers:
+        - name: "search"
+          image: yizhengx/ubench:hotel
+          securityContext:
+            capabilities:
+              add:
+                - SYS_NICE
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "search"
+          ports:
+            - containerPort: 3000
+            - containerPort: 5550
+            - containerPort: 5551
+          imagePullPolicy: Always

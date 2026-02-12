@@ -1,0 +1,48 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "reservation"
+  labels:
+    app: "reservation"
+spec:
+  selector:
+    app: "reservation"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "reservation"
+  labels:
+    app: "reservation"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "reservation"
+  template:
+    metadata:
+      labels:
+        app: "reservation"
+    spec:
+      containers:
+        - name: "reservation"
+          image: yizhengx/ubench:hotel
+          securityContext:
+            capabilities:
+              add:
+                - SYS_NICE
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "reservation"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

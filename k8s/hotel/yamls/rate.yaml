@@ -1,0 +1,48 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "rate"
+  labels:
+    app: "rate"
+spec:
+  selector:
+    app: "rate"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "rate"
+  labels:
+    app: "rate"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "rate"
+  template:
+    metadata:
+      labels:
+        app: "rate"
+    spec:
+      containers:
+        - name: "rate"
+          image: yizhengx/ubench:hotel
+          securityContext:
+            capabilities:
+              add:
+                - SYS_NICE
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "rate"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

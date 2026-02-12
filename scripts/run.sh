@@ -114,15 +114,15 @@ populate() {
         return
     fi
     if [[ $benchmark == "hotel" || $benchmark == "movie" ]]; then
-        echo "[run.sh] Copying $SLOWPOKE_TOP/evaluation/$benchmark/analysis.txt to $ubuntu_client:/analysis.txt"
-        kubectl cp $SLOWPOKE_TOP/evaluation/$benchmark/data/analysis.txt $ubuntu_client:/analysis.txt
+        echo "[run.sh] Copying ../k8s/$benchmark/analysis.txt to $ubuntu_client:/analysis.txt"
+        kubectl cp ../k8s/$benchmark/data/analysis.txt $ubuntu_client:/analysis.txt
         echo "[run.sh] Finished populating $benchmark"
         return
     fi
     echo "[run.sh] Populating social benchmark"
-    bash $SLOWPOKE_TOP/evaluation/$benchmark/populate.sh 
-    echo "[run.sh] Copying $SLOWPOKE_TOP/evaluation/$benchmark/data/analysis.txt to $ubuntu_client:/analysis.txt"
-    kubectl cp $SLOWPOKE_TOP/evaluation/$benchmark/data/analysis.txt $ubuntu_client:/analysis.txt
+    bash ../k8s/$benchmark/populate.sh 
+    echo "[run.sh] Copying ../k8s/$benchmark/data/analysis.txt to $ubuntu_client:/analysis.txt"
+    kubectl cp ../k8s/$benchmark/data/analysis.txt $ubuntu_client:/analysis.txt
     echo "[run.sh] Finished populating $benchmark"
 }
 
