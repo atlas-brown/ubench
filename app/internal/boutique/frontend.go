@@ -2,9 +2,9 @@ package boutique
 
 import (
 	"context"
-	// "github.com/eniac/mucache/pkg/invoke"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/invoke"
 	"fmt"
+	"net/http"
 )
 
 const (
@@ -14,15 +14,15 @@ const (
 func Home(ctx context.Context, request HomeRequest) HomeResponse {
 	if (debug_frontend) { fmt.Println("Home: ", request) }
 	req1 := GetSupportedCurrenciesRequest{}
-	currenciesRes := slowpoke.Invoke[GetSupportedCurrenciesResponse](ctx, "currency", "ro_get_currencies", req1)
+	currenciesRes := invoke.Invoke[GetSupportedCurrenciesResponse](ctx, "currency", "ro_get_currencies", req1, http.Request{})
 	//http.HandleFunc("/ro_get_currencies", wrappers.ROWrapper[boutique.GetSupportedCurrenciesRequest, boutique.GetSupportedCurrenciesResponse](getCurrencies))
 
 	req2 := GetCartRequest{UserId: request.Userid}
-	cartRes := slowpoke.Invoke[GetCartResponse](ctx, "cart", "ro_get_cart", req2)
+	cartRes := invoke.Invoke[GetCartResponse](ctx, "cart", "ro_get_cart", req2, http.Request{})
 	//http.HandleFunc("/ro_get_cart", wrappers.ROWrapper[boutique.GetCartRequest, boutique.GetCartResponse](getCart))
 
 	req3 := FetchCatalogRequest{CatalogSize: request.CatalogSize}
-	catalogRes := slowpoke.Invoke[FetchCatalogResponse](ctx, "productcatalog", "ro_fetch_catalog", req3)
+	catalogRes := invoke.Invoke[FetchCatalogResponse](ctx, "productcatalog", "ro_fetch_catalog", req3, http.Request{})
 	//http.HandleFunc("/ro_fetch_catalog", wrappers.ROWrapper[boutique.FetchCatalogRequest, boutique.FetchCatalogResponse](fetchCatalog))
 
 	res := HomeResponse{
@@ -36,13 +36,13 @@ func Home(ctx context.Context, request HomeRequest) HomeResponse {
 func FrontendSetCurrency(ctx context.Context, currency Currency) {
 	if (debug_frontend) { fmt.Println("FrontendSetCurrency: ", currency) }
 	req := SetCurrencySupportRequest{Currency: currency}
-	slowpoke.Invoke[SetCurrencySupportResponse](ctx, "currency", "set_currency", req)
+	invoke.Invoke[SetCurrencySupportResponse](ctx, "currency", "set_currency", req, http.Request{})
 }
 
 func BrowseProduct(ctx context.Context, productId string) BrowseProductResponse {
 	if (debug_frontend) { fmt.Println("BrowseProduct: ", productId) }
 	req := GetProductRequest{ProductId: productId}
-	res := slowpoke.Invoke[GetProductResponse](ctx, "productcatalog", "ro_get_product", req)
+	res := invoke.Invoke[GetProductResponse](ctx, "productcatalog", "ro_get_product", req, http.Request{})
 	return BrowseProductResponse{res.Product}
 }
 
@@ -53,7 +53,7 @@ func AddToCart(ctx context.Context, request AddToCartRequest) AddToCartResponse 
 		ProductId: request.ProductId,
 		Quantity:  request.Quantity,
 	}
-	res := slowpoke.Invoke[AddItemResponse](ctx, "cart", "add_item", req)
+	res := invoke.Invoke[AddItemResponse](ctx, "cart", "add_item", req, http.Request{})
 	//http.HandleFunc("/add_item", wrappers.NonROWrapper[boutique.AddItemRequest, boutique.AddItemResponse](addItemToCart))
 	return AddToCartResponse{OK: res.Ok}
 }
@@ -63,7 +63,7 @@ func ViewCart(ctx context.Context, request ViewCartRequest) ViewCartResponse {
 	req := GetCartRequest{
 		UserId: request.UserId,
 	}
-	res := slowpoke.Invoke[GetCartResponse](ctx, "cart", "ro_get_cart", req)
+	res := invoke.Invoke[GetCartResponse](ctx, "cart", "ro_get_cart", req, http.Request{})
 	//http.HandleFunc("/ro_get_cart", wrappers.ROWrapper[boutique.GetCartRequest, boutique.GetCartResponse](getCart))
 	return ViewCartResponse{C: res.Cart}
 }
@@ -77,7 +77,7 @@ func Checkout(ctx context.Context, request CheckoutRequest) CheckoutResponse {
 		Email:        request.Email,
 		CreditCard:   request.CreditCard,
 	}
-	res := slowpoke.Invoke[PlaceOrderResponse](ctx, "checkout", "place_order", req)
+	res := invoke.Invoke[PlaceOrderResponse](ctx, "checkout", "place_order", req, http.Request{})
 	//http.HandleFunc("/place_order", wrappers.NonROWrapper[boutique.PlaceOrderRequest, boutique.PlaceOrderResponse](placeOrder))
 	return CheckoutResponse{
 		Res: res.Order,

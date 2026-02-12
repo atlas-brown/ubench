@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/boutique"
-	// "github.com/eniac/mucache/pkg/cm"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/boutique"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net"
 	"net/http"
 	"runtime"
@@ -37,16 +35,12 @@ func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
 	// go cm.ZmqProxy()
 	http.HandleFunc("/heartbeat", heartbeat)
-	// http.HandleFunc("/ro_get_quote", wrappers.ROWrapper[boutique.GetQuoteRequest, boutique.GetQuoteResponse](getQuote))
-	http.HandleFunc("/ro_get_quote", wrappers.SlowpokeWrapper[boutique.GetQuoteRequest, boutique.GetQuoteResponse](getQuote, "getQuote"))
-	// http.HandleFunc("/ship_order", wrappers.NonROWrapper[boutique.ShipOrderRequest, boutique.ShipOrderResponse](shipOrder))
-	http.HandleFunc("/ship_order", wrappers.SlowpokeWrapper[boutique.ShipOrderRequest, boutique.ShipOrderResponse](shipOrder, "shipOrder"))
-	slowpoke.SlowpokeInit()
+	http.HandleFunc("/ro_get_quote", wrappers.Wrapper[boutique.GetQuoteRequest, boutique.GetQuoteResponse](getQuote))
+	http.HandleFunc("/ship_order", wrappers.Wrapper[boutique.ShipOrderRequest, boutique.ShipOrderResponse](shipOrder))
 	fmt.Println("Server started on port 3000")
 	listener, err := net.Listen("tcp", ":3000")
 	if err != nil {
 		panic(err)
 	}
-	slowpokeListener := &slowpoke.SlowpokeListener{listener}
-	panic(http.Serve(slowpokeListener, nil))
+	panic(http.Serve(listener, nil))
 }

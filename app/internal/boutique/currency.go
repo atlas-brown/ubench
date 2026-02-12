@@ -3,7 +3,6 @@ package boutique
 import (
 	"context"
 	"fmt"
-	// "github.com/eniac/mucache/pkg/state"
 	"math"
 	"strconv"
 	"strings"
@@ -14,18 +13,9 @@ const (
 	debug_currency = false
 )
 
-// var allCurrencies []Currency
-// var allCurrencies map[string]Currency
 var allCurrencies sync.Map
 
 func InitAllCurrencies(ctx context.Context, currencies []Currency) {
-	// // allCurrencies = currencies
-	// allCurrencies = make(map[string]Currency)
-	// for _, currency := range currencies {
-	// 	allCurrencies[currency.CurrencyCode] = currency
-	// }
-	// fmt.Println("InitAllCurrencies: ", len(allCurrencies))
-
 	allCurrencies = sync.Map{}
 	for _, currency := range currencies {
 		SetCurrencySupport(ctx, currency)
@@ -58,18 +48,9 @@ func InitCurrencies(ctx context.Context, currencies []Currency) {
 	for _, currency := range currencies {
 		SetCurrencySupport(ctx, currency)
 	}
-
-	// currencyCodes := make([]string, len(currencies))
-	// for i, currency := range currencies {
-	// 	currencyCodes[i] = currency.CurrencyCode
-	// 	SetCurrencySupport(ctx, currency)
-	// }
-	// state.SetState(ctx, "CURRENCIES", currencyCodes)
 }
 
 func ConvertCurrency(ctx context.Context, amount Money, toCurrency string) Money {
-	// fromRate, err := state.GetState[Currency](ctx, amount.Currency)
-	// fromRate, ok := allCurrencies[amount.Currency]
 	fromRate, ok := allCurrencies.Load(amount.Currency)
 	if !ok {
 		panic(fmt.Errorf("currency %s not found", amount.Currency))
@@ -116,24 +97,4 @@ func GetSupportedCurrencies(ctx context.Context) []Currency {
 		return true
 	})
 	return currencies
-
-	// var currencies []Currency
-	// for _, c := range allCurrencies {
-	// 	currencies = append(currencies, c)
-	// }
-	// return currencies
-
-	// keys, err := state.GetState[[]string](ctx, "CURRENCIES")
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// // Bulk
-	// var currencies []Currency
-	// if len(keys) > 0 {
-	// 	currencies = state.GetBulkStateDefault[Currency](ctx, keys, Currency{})
-	// } else {
-	// 	currencies = make([]Currency, len(keys))
-	// }
-	// return currencies
 }

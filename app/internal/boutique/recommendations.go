@@ -2,10 +2,10 @@ package boutique
 
 import (
 	"context"
-	// "github.com/eniac/mucache/pkg/invoke"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/invoke"
 	"math/rand"
 	"fmt"
+	"net/http"
 )
 
 const (
@@ -32,7 +32,7 @@ func GetRecommendations(ctx context.Context, productIds []string) []string {
 	if debug_recommendations { fmt.Println("GetRecommendations: ", productIds) }
 	_productIds := make([]string, 0)
 	req1 := FetchCatalogRequest{}
-	catalog := slowpoke.Invoke[FetchCatalogResponse](ctx, "productcatalog", "ro_fetch_catalog", req1)
+	catalog := invoke.Invoke[FetchCatalogResponse](ctx, "productcatalog", "ro_fetch_catalog", req1, http.Request{})
 	for _, x := range catalog.Catalog {
 		_productIds = append(_productIds, x.Id)
 	}

@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/boutique"
-	// "github.com/eniac/mucache/pkg/cm"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/boutique"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net"
 	"net/http"
 	"runtime"
@@ -58,26 +56,17 @@ func checkout(ctx context.Context, request *boutique.CheckoutRequest) *boutique.
 
 func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
-	// go cm.ZmqProxy() // Disable cache proxy
 	http.HandleFunc("/heartbeat", heartbeat)
-	// http.HandleFunc("/ro_home", wrappers.ROWrapper[boutique.HomeRequest, boutique.HomeResponse](home))
-	http.HandleFunc("/ro_home", wrappers.SlowpokeWrapper[boutique.HomeRequest, boutique.HomeResponse](home, "home"))
-	// http.HandleFunc("/set_currency", wrappers.NonROWrapper[boutique.FrontendSetCurrencyRequest, boutique.FrontendSetCurrencyResponse](setCurrency))
-	http.HandleFunc("/set_currency", wrappers.SlowpokeWrapper[boutique.FrontendSetCurrencyRequest, boutique.FrontendSetCurrencyResponse](setCurrency, "setCurrency"))
-	// http.HandleFunc("/ro_browse_product", wrappers.ROWrapper[boutique.BrowseProductRequest, boutique.BrowseProductResponse](browseProduct))
-	http.HandleFunc("/ro_browse_product", wrappers.SlowpokeWrapper[boutique.BrowseProductRequest, boutique.BrowseProductResponse](browseProduct, "browseProduct"))
-	// http.HandleFunc("/add_to_cart", wrappers.NonROWrapper[boutique.AddToCartRequest, boutique.AddToCartResponse](addToCart))
-	http.HandleFunc("/add_to_cart", wrappers.SlowpokeWrapper[boutique.AddToCartRequest, boutique.AddToCartResponse](addToCart, "addToCart"))
-	// http.HandleFunc("/ro_view_cart", wrappers.ROWrapper[boutique.ViewCartRequest, boutique.ViewCartResponse](viewCart))
-	http.HandleFunc("/ro_view_cart", wrappers.SlowpokeWrapper[boutique.ViewCartRequest, boutique.ViewCartResponse](viewCart, "viewCart"))
-	// http.HandleFunc("/checkout", wrappers.ROWrapper[boutique.CheckoutRequest, boutique.CheckoutResponse](checkout))
-	http.HandleFunc("/checkout", wrappers.SlowpokeWrapper[boutique.CheckoutRequest, boutique.CheckoutResponse](checkout, "checkout"))
-	slowpoke.SlowpokeInit()
+	http.HandleFunc("/ro_home", wrappers.Wrapper[boutique.HomeRequest, boutique.HomeResponse](home))
+	http.HandleFunc("/set_currency", wrappers.Wrapper[boutique.FrontendSetCurrencyRequest, boutique.FrontendSetCurrencyResponse](setCurrency))
+	http.HandleFunc("/ro_browse_product", wrappers.Wrapper[boutique.BrowseProductRequest, boutique.BrowseProductResponse](browseProduct))
+	http.HandleFunc("/add_to_cart", wrappers.Wrapper[boutique.AddToCartRequest, boutique.AddToCartResponse](addToCart))
+	http.HandleFunc("/ro_view_cart", wrappers.Wrapper[boutique.ViewCartRequest, boutique.ViewCartResponse](viewCart))
+	http.HandleFunc("/checkout", wrappers.Wrapper[boutique.CheckoutRequest, boutique.CheckoutResponse](checkout))
 	fmt.Println("Server started on :3000")
 	listener, err := net.Listen("tcp", ":3000")
 	if err != nil {
 		panic(err)
 	}
-	slowpokeListener := &slowpoke.SlowpokeListener{listener}
-	panic(http.Serve(slowpokeListener, nil))
+	panic(http.Serve(listener, nil))
 }
