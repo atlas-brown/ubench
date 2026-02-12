@@ -5,15 +5,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"google.golang.org/grpc"
 	"net/http"
-	"time"
 	"sync"
+	"time"
+
 	pb "github.com/atlas/slowpoke/pkg/pb"
 	"github.com/atlas/slowpoke/pkg/utility"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+        "google.golang.org/grpc/status"
+	"google.golang.org/grpc/metadata"
 )
+
+
 var (
-	grpcConns map[string]*grpc.ClientConn = make(map[string]*grpc.ClientConn)
+	grpcConns    map[string]*grpc.ClientConn = make(map[string]*grpc.ClientConn)
 	grpcConnLock sync.RWMutex
 )
 
@@ -21,7 +27,6 @@ var HTTPClient = &http.Client{
 	Transport: &http.Transport{MaxConnsPerHost: 0, MaxIdleConnsPerHost: 500, MaxIdleConns: 500},
 	Timeout:   60 * time.Second,
 }
-
 
 func performRequest[T interface{}](ctx context.Context, req *http.Request, res *T, app string, method string, argBytes []byte) {
 	resp, err := HTTPClient.Do(req)
@@ -33,7 +38,7 @@ func performRequest[T interface{}](ctx context.Context, req *http.Request, res *
 	utility.ParseJson(resp.Body, res)
 }
 
-func Invoke[T interface{}](ctx context.Context, app string, method string, input interface{}) T {
+func Invoke[T interface{}](ctx context.Context, app string, method string, input interface{}, request http.Request) T {
 	buf, err := json.Marshal(input)
 	if err != nil {
 		panic(err)
@@ -42,6 +47,10 @@ func Invoke[T interface{}](ctx context.Context, app string, method string, input
 	// Use kubernete native DNS addr
 	url := fmt.Sprintf("http://%s.%s.svc.cluster.local:%s/%s", app, "default", "80", method)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(buf))
+	// Forward x-request-id if present
+	if rid := request.Header.Get("x-request-id"); rid != "" {
+		req.Header.Set("x-request-id", rid)
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -55,6 +64,18 @@ func InitGRPCConn(app string) *grpc.ClientConn {
 		panic(err)
 	}
 	return conn
+}
+
+func requestIDFromContext(ctx context.Context) (string, bool) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", false
+	}
+	vals := md.Get("x-request-id")
+	if len(vals) == 0 {
+		return "", false
+	}
+	return vals[0], true
 }
 
 func InvokeGRPC(ctx context.Context, app string, method string, input interface{}) string {
@@ -75,10 +96,29 @@ func InvokeGRPC(ctx context.Context, app string, method string, input interface{
 		grpcConnLock.Unlock()
 	}
 
+	// // Extract x-request-id from incoming gRPC context
+	// if rid, ok := requestIDFromContext(ctx); ok {
+	// 	ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", rid)
+	// }
+
+	if rid, ok := requestIDFromContext(ctx); ok {
+		outMD, _ := metadata.FromOutgoingContext(ctx)
+		outMD = outMD.Copy()
+		outMD.Set("x-request-id", rid)
+		ctx = metadata.NewOutgoingContext(ctx, outMD)
+	}
+
 	client := pb.NewSimpleClient(grpcConn)
 	resp_, err := client.SimpleRPC(ctx, &pb.SimpleRequest{Endpoint: method})
-	if err != nil {
-		panic(err)
-	}
+        if err != nil {
+            // Treat expected cancellations/timeouts as non-fatal
+            if st, ok := status.FromError(err); ok {
+                switch st.Code() {
+                case codes.Canceled, codes.DeadlineExceeded:
+                    return ""
+                }
+            }
+            panic(err)
+        }
 	return resp_.Resp
 }

@@ -23,9 +23,9 @@ type Response struct {
 	NetworkResp string `json:"network_response"`
 }
 
-func execTask(request *http.Request, endpoint *synthetic.Endpoint) Response {
+func execTask(request *http.Request, grpc_ctx *context.Context, endpoint *synthetic.Endpoint) Response {
 	cpuResp := execCPU(endpoint)
-	networkResp := execNetwork(request, endpoint)
+	networkResp := execNetwork(request, grpc_ctx, endpoint)
 	networkRespStr := "["
 	for key, value := range networkResp {
 		networkRespStr += fmt.Sprintf("{%s: %s} ", key, value)
@@ -37,7 +37,8 @@ func execTask(request *http.Request, endpoint *synthetic.Endpoint) Response {
 }
 
 func (handler endpointHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	response := execTask(request, handler.endpoint)
+	fmt.Println("called")
+	response := execTask(request, nil, handler.endpoint)
 	utility.DumpJson(response, writer)
 }
 
@@ -83,7 +84,7 @@ func (s *grpcServer) SimpleRPC(ctx context.Context, in *pb.SimpleRequest) (*pb.S
 	var response Response
 	for i := range s.endpoints {
 		if s.endpoints[i].Name == target_endpoint {
-			response = execTask(nil, &s.endpoints[i])
+			response = execTask(nil, &ctx, &s.endpoints[i])
 		}
 	}
 	jsonBytes, err := utility.MarshalJson(response)
