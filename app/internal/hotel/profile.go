@@ -2,10 +2,10 @@ package hotel
 
 import (
 	"context"
-	"github.com/eniac/mucache/pkg/slowpoke"
 	"fmt"
 	"os"
 	"github.com/goccy/go-json"
+	"github.com/atlas/slowpoke/pkg/state"
 )
 
 func getRandomString(sz int) string {
@@ -50,7 +50,7 @@ func InitProfiles() {
 
 
 func StoreProfile(ctx context.Context, profile HotelProfile) string {
-	slowpoke.SetState(ctx, profile.HotelId, profile)
+	state.SetState(ctx, profile.HotelId, profile)
 	return profile.HotelId
 }
 
@@ -68,7 +68,7 @@ func GetProfiles(ctx context.Context, hotelIds []string) []HotelProfile {
 	// Bulk
 	var profiles []HotelProfile
 	if len(hotelIds) > 0 {
-		profiles = slowpoke.GetBulkStateDefault[HotelProfile](ctx, hotelIds, HotelProfile{})
+		profiles = state.GetBulkStateDefault[HotelProfile](ctx, hotelIds, HotelProfile{})
 	} else {
 		profiles = make([]HotelProfile, len(hotelIds))
 	}

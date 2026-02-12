@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/hotel"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/hotel"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net/http"
 	"runtime"
 )
@@ -34,11 +33,10 @@ func getRates(ctx context.Context, req *hotel.GetRatesRequest) *hotel.GetRatesRe
 
 func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
-	slowpoke.SlowpokeInit()
 	hotel.InitRates()
 	http.HandleFunc("/heartbeat", heartbeat)
-	http.HandleFunc("/store_rate", wrappers.SlowpokeWrapper[hotel.StoreRateRequest, hotel.StoreRateResponse](storeRate, "store_rate"))
-	http.HandleFunc("/ro_get_rates", wrappers.SlowpokeWrapper[hotel.GetRatesRequest, hotel.GetRatesResponse](getRates, "ro_get_rates"))
+	http.HandleFunc("/store_rate", wrappers.Wrapper[hotel.StoreRateRequest, hotel.StoreRateResponse](storeRate))
+	http.HandleFunc("/ro_get_rates", wrappers.Wrapper[hotel.GetRatesRequest, hotel.GetRatesResponse](getRates))
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		panic(err)

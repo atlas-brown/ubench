@@ -2,12 +2,13 @@ package hotel
 
 import (
 	"context"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/invoke"
+	"net/http"
 )
 
 func SearchHotels(ctx context.Context, inDate string, outDate string, location string) []HotelProfile {
 	req1 := NearbyRequest{InDate: inDate, OutDate: outDate, Location: location}
-	hotelIdsRes := slowpoke.Invoke[NearbyResponse](ctx, "search", "ro_nearby", req1)
+	hotelIdsRes := invoke.Invoke[NearbyResponse](ctx, "search", "ro_nearby", req1, http.Request{})
 	rates := hotelIdsRes.Rates
 
 	hotelIds := make([]string, len(rates))
@@ -22,28 +23,28 @@ func SearchHotels(ctx context.Context, inDate string, outDate string, location s
 		OutDate:      outDate,
 		RoomNumber:   1,
 	}
-	availableHotelIdsRes := slowpoke.Invoke[CheckAvailabilityResponse](ctx, "reservation", "ro_check_availability", req2)
+	availableHotelIdsRes := invoke.Invoke[CheckAvailabilityResponse](ctx, "reservation", "ro_check_availability", req2, http.Request{})
 
 	//fmt.Printf("[Frontend] Location: %v -- Available hotel ids: %v\n", location, availableHotelIdsRes)
 
 	req3 := GetProfilesRequest{HotelIds: availableHotelIdsRes.HotelIds}
-	profilesRes := slowpoke.Invoke[GetProfilesResponse](ctx, "profile", "ro_get_profiles", req3)
+	profilesRes := invoke.Invoke[GetProfilesResponse](ctx, "profile", "ro_get_profiles", req3, http.Request{})
 	//fmt.Printf("[Frontend] Reviews read: %v\n", reviewsRes)
 	return profilesRes.Profiles
 }
 
 func StoreHotel(ctx context.Context, hotelId string, name string, phone string, location string, rate int, capacity int, info string) string {
 	req1 := StoreHotelLocationRequest{Location: location, HotelId: hotelId}
-	slowpoke.Invoke[StoreHotelLocationResponse](ctx, "search", "store_hotel_location", req1)
+	invoke.Invoke[StoreHotelLocationResponse](ctx, "search", "store_hotel_location", req1, http.Request{})
 
 	req2 := StoreRateRequest{Rate: Rate{HotelId: hotelId, Price: rate}}
-	slowpoke.Invoke[StoreRateResponse](ctx, "rate", "store_rate", req2)
+	invoke.Invoke[StoreRateResponse](ctx, "rate", "store_rate", req2, http.Request{})
 
 	req3 := AddHotelAvailabilityRequest{
 		HotelId:  hotelId,
 		Capacity: capacity,
 	}
-	slowpoke.Invoke[AddHotelAvailabilityResponse](ctx, "reservation", "add_hotel_availability", req3)
+	invoke.Invoke[AddHotelAvailabilityResponse](ctx, "reservation", "add_hotel_availability", req3, http.Request{})
 
 	hotelProfile := HotelProfile{
 		HotelId: hotelId,
@@ -52,7 +53,7 @@ func StoreHotel(ctx context.Context, hotelId string, name string, phone string, 
 		Info:    info,
 	}
 	req4 := StoreProfileRequest{Profile: hotelProfile}
-	slowpoke.Invoke[StoreProfileRequest](ctx, "profile", "store_profile", req4)
+	invoke.Invoke[StoreProfileResponse](ctx, "profile", "store_profile", req4, http.Request{})
 	return hotelId
 }
 
@@ -61,7 +62,7 @@ func FrontendReservation(ctx context.Context, hotelId string, inDate string, out
 		Username: username,
 		Password: password,
 	}
-	tokenRes := slowpoke.Invoke[LoginResponse](ctx, "user", "login", req1)
+	tokenRes := invoke.Invoke[LoginResponse](ctx, "user", "login", req1, http.Request{})
 	if tokenRes.Token != "OK" {
 		return false
 	}
@@ -73,6 +74,6 @@ func FrontendReservation(ctx context.Context, hotelId string, inDate string, out
 		OutDate:      outDate,
 		RoomNumber:   rooms,
 	}
-	successRes := slowpoke.Invoke[MakeReservationResponse](ctx, "reservation", "make_reservation", req2)
+	successRes := invoke.Invoke[MakeReservationResponse](ctx, "reservation", "make_reservation", req2, http.Request{})
 	return successRes.Success
 }

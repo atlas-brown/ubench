@@ -2,10 +2,12 @@ package hotel
 
 import (
 	"context"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/state"
+	"github.com/atlas/slowpoke/pkg/invoke"
 	"os"
 	"github.com/goccy/go-json"
 	"fmt"
+	"net/http"
 )
 
 func InitLocations() {
@@ -40,7 +42,7 @@ func Nearby(ctx context.Context, inDate string, outDate string, location string)
 
 	// Get the rates for these hotels
 	req := GetRatesRequest{HotelIds: hotelIds}
-	ratesRes := slowpoke.Invoke[GetRatesResponse](ctx, "rate", "ro_get_rates", req)
+	ratesRes := invoke.Invoke[GetRatesResponse](ctx, "rate", "ro_get_rates", req, http.Request{})
 	return ratesRes.Rates
 }
 
@@ -51,12 +53,12 @@ func StoreHotelLocation(ctx context.Context, hotelId string, location string) st
 		hotelIds = hotelIds[1:]
 	}
 	hotelIds = append(hotelIds, hotelId)
-	slowpoke.SetState(ctx, location, hotelIds)
+	state.SetState(ctx, location, hotelIds)
 	return hotelId
 }
 
 func getHotelIdsForLocation(ctx context.Context, location string) []string {
-	hotelIds, err := slowpoke.GetState[[]string](ctx, location)
+	hotelIds, err := state.GetState[[]string](ctx, location)
 	// If err != nil then the key does not exist
 	if err != nil {
 		return []string{}

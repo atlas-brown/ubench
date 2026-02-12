@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/state"
 	"github.com/lithammer/shortuuid"
 	"fmt"
 	"strconv"
@@ -33,7 +33,7 @@ func RegisterUser(ctx context.Context, username string, password string) bool {
 		Salt:     salt,
 	}
 
-	slowpoke.SetState(ctx, username, user)
+	state.SetState(ctx, username, user)
 	return true
 }
 
@@ -45,7 +45,7 @@ func hash(str string) []byte {
 }
 
 func Login(ctx context.Context, username string, password string) string {
-	user, err := slowpoke.GetState[User](ctx, username)
+	user, err := state.GetState[User](ctx, username)
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +58,7 @@ func Login(ctx context.Context, username string, password string) string {
 }
 
 func GetUserId(ctx context.Context, username string) string {
-	user, err := slowpoke.GetState[User](ctx, username)
+	user, err := state.GetState[User](ctx, username)
 	if err != nil {
 		panic(err)
 	}

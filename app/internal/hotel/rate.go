@@ -2,7 +2,7 @@ package hotel
 
 import (
 	"context"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/state"
 	"os"
 	"github.com/goccy/go-json"
 	"fmt"
@@ -38,7 +38,7 @@ func InitRates() {
 }
 
 func StoreRate(ctx context.Context, rate Rate) string {
-	slowpoke.SetState(ctx, rate.HotelId, rate)
+	state.SetState(ctx, rate.HotelId, rate)
 	return rate.HotelId
 }
 
@@ -46,7 +46,7 @@ func GetRates(ctx context.Context, hotelIds []string) []Rate {
 	//fmt.Printf("[ReviewStorage] Asked for: %v\n", reviewIds)
 	rates := make([]Rate, len(hotelIds))
 	for i, hotelId := range hotelIds {
-		rate, err := slowpoke.GetState[Rate](ctx, hotelId)
+		rate, err := state.GetState[Rate](ctx, hotelId)
 		if err != nil {
 			panic(err)
 		}

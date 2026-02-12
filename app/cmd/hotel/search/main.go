@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/hotel"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/hotel"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net/http"
 	"runtime"
 )
@@ -34,11 +33,10 @@ func storeHotelLocation(ctx context.Context, req *hotel.StoreHotelLocationReques
 
 func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
-	slowpoke.SlowpokeInit()
 	hotel.InitLocations()
 	http.HandleFunc("/heartbeat", heartbeat)
-	http.HandleFunc("/ro_nearby", wrappers.SlowpokeWrapper[hotel.NearbyRequest, hotel.NearbyResponse](nearby, "ro_nearby"))
-	http.HandleFunc("/store_hotel_location", wrappers.SlowpokeWrapper[hotel.StoreHotelLocationRequest, hotel.StoreHotelLocationResponse](storeHotelLocation, "store_hotel_location"))
+	http.HandleFunc("/ro_nearby", wrappers.Wrapper[hotel.NearbyRequest, hotel.NearbyResponse](nearby))
+	http.HandleFunc("/store_hotel_location", wrappers.Wrapper[hotel.StoreHotelLocationRequest, hotel.StoreHotelLocationResponse](storeHotelLocation))
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		panic(err)
