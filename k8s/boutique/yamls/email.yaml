@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "email"
+  labels:
+    app: "email"
+spec:
+  selector:
+    app: "email"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "email"
+  labels:
+    app: "email"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "email"
+  template:
+    metadata:
+      labels:
+        app: "email"
+    spec:
+      containers:
+        - name: "email"
+          image: yizhengx/ubench:boutique
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "email"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "shipping"
+  labels:
+    app: "shipping"
+spec:
+  selector:
+    app: "shipping"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "shipping"
+  labels:
+    app: "shipping"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "shipping"
+  template:
+    metadata:
+      labels:
+        app: "shipping"
+    spec:
+      containers:
+        - name: "shipping"
+          image: yizhengx/ubench:boutique
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "shipping"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always

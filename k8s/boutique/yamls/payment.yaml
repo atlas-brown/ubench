@@ -1,0 +1,46 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "payment"
+  labels:
+    app: "payment"
+spec:
+  selector:
+    app: "payment"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "payment"
+  labels:
+    app: "payment"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "payment"
+  template:
+    metadata:
+      labels:
+        app: "payment"
+    spec:
+      containers:
+        - name: "payment"
+          image: yizhengx/ubench:boutique
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "payment"
+          ports:
+            - containerPort: 3000
+            - containerPort: 5550
+            - containerPort: 5551
+          imagePullPolicy: Always

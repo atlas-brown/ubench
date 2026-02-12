@@ -1,0 +1,44 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "productcatalog"
+  labels:
+    app: "productcatalog"
+spec:
+  selector:
+    app: "productcatalog"
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+      name: http
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "productcatalog"
+  labels:
+    app: "productcatalog"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "productcatalog"
+  template:
+    metadata:
+      labels:
+        app: "productcatalog"
+    spec:
+      containers:
+        - name: "productcatalog"
+          image: yizhengx/ubench:boutique
+          env:
+            - name: APP_PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "product_catalog"
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always
