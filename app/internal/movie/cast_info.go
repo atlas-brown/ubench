@@ -2,7 +2,7 @@ package movie
 
 import (
 	"context"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/state"
 )
 
 func StoreCastInfo(ctx context.Context, castId string, name string, info string) string {
@@ -11,28 +11,15 @@ func StoreCastInfo(ctx context.Context, castId string, name string, info string)
 		Name:   name,
 		Info:   info,
 	}
-	slowpoke.SetState(ctx, castId, castInfo)
+	state.SetState(ctx, castId, castInfo)
 	return castId
 }
 
 func ReadCastInfos(ctx context.Context, castIds []string) []CastInfo {
-	//fmt.Printf("Keys: %+v\n", castIds)
-	//castInfos := make([]CastInfo, len(castIds))
-	//for i, castId := range castIds {
-	//	castInfo, err := slowpoke.GetState[CastInfo](ctx, castId)
-	//	if err != nil {
-	//		// If we don't find the cast info, we can simply return an empty struct for that one
-	//		// This might sometimes happen because we haven't populated the actor dictionary with all actors.
-	//		castInfos[i] = CastInfo{}
-	//	} else {
-	//		castInfos[i] = castInfo
-	//	}
-	//}
-
 	// Bulk
 	var castInfos []CastInfo
 	if len(castIds) > 0 {
-		castInfos = slowpoke.GetBulkStateDefault[CastInfo](ctx, castIds, CastInfo{})
+		castInfos = state.GetBulkStateDefault[CastInfo](ctx, castIds, CastInfo{})
 	} else {
 		castInfos = make([]CastInfo, len(castIds))
 	}

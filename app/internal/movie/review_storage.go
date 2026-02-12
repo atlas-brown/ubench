@@ -2,11 +2,11 @@ package movie
 
 import (
 	"context"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/state"
 )
 
 func StoreReview(ctx context.Context, review Review) string {
-	slowpoke.SetState(ctx, review.ReviewId, review)
+	state.SetState(ctx, review.ReviewId, review)
 	return review.ReviewId
 }
 
@@ -24,7 +24,7 @@ func ReadReviews(ctx context.Context, reviewIds []string) []Review {
 	// Bulk
 	var reviews []Review
 	if len(reviewIds) > 0 {
-		reviews = slowpoke.GetBulkStateDefault[Review](ctx, reviewIds, Review{})
+		reviews = state.GetBulkStateDefault[Review](ctx, reviewIds, Review{})
 	} else {
 		reviews = make([]Review, len(reviews))
 	}

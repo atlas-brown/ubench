@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/movie"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/movie"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net/http"
 	"runtime"
 )
@@ -18,7 +17,6 @@ func heartbeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func registerUser(ctx context.Context, req *movie.RegisterUserRequest) *movie.RegisterUserResponse {
-    // slowpoke.SlowpokeCheck("registerUser");
 	ok := movie.RegisterUser(ctx, req.Username, req.Password)
 	//fmt.Printf("Movie info read: %v\n", movieInfo)
 	resp := movie.RegisterUserResponse{Ok: ok}
@@ -26,7 +24,6 @@ func registerUser(ctx context.Context, req *movie.RegisterUserRequest) *movie.Re
 }
 
 func login(ctx context.Context, req *movie.LoginRequest) *movie.LoginResponse {
-    // slowpoke.SlowpokeCheck("login");
 	token := movie.Login(ctx, req.Username, req.Password)
 	//fmt.Println("Movie info stored for id: " + movieId)
 	resp := movie.LoginResponse{Token: token}
@@ -34,7 +31,6 @@ func login(ctx context.Context, req *movie.LoginRequest) *movie.LoginResponse {
 }
 
 func getUserId(ctx context.Context, req *movie.GetUserIdRequest) *movie.GetUserIdResponse {
-    // slowpoke.SlowpokeCheck("getUserId");
 	userId := movie.GetUserId(ctx, req.Username)
 	resp := movie.GetUserIdResponse{UserId: userId}
 	return &resp
@@ -50,14 +46,10 @@ func populate() {
 func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
 	populate()
-	slowpoke.SlowpokeInit()
 	http.HandleFunc("/heartbeat", heartbeat)
-	// http.HandleFunc("/register_user", wrappers.NonROWrapper[movie.RegisterUserRequest, movie.RegisterUserResponse](registerUser))
-	http.HandleFunc("/register_user", wrappers.SlowpokeWrapper[movie.RegisterUserRequest, movie.RegisterUserResponse](registerUser, "registerUser"))
-	// http.HandleFunc("/login", wrappers.NonROWrapper[movie.LoginRequest, movie.LoginResponse](login))
-	http.HandleFunc("/login", wrappers.SlowpokeWrapper[movie.LoginRequest, movie.LoginResponse](login, "login"))
-	// http.HandleFunc("/ro_get_user_id", wrappers.ROWrapper[movie.GetUserIdRequest, movie.GetUserIdResponse](getUserId))
-	http.HandleFunc("/ro_get_user_id", wrappers.SlowpokeWrapper[movie.GetUserIdRequest, movie.GetUserIdResponse](getUserId, "getUserId"))
+	http.HandleFunc("/register_user", wrappers.Wrapper[movie.RegisterUserRequest, movie.RegisterUserResponse](registerUser))
+	http.HandleFunc("/login", wrappers.Wrapper[movie.LoginRequest, movie.LoginResponse](login))
+	http.HandleFunc("/ro_get_user_id", wrappers.Wrapper[movie.GetUserIdRequest, movie.GetUserIdResponse](getUserId))
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		panic(err)

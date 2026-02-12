@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/movie"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/movie"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net/http"
 	"runtime"
 	"os"
@@ -21,7 +20,6 @@ func heartbeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func storeMovieInfo(ctx context.Context, req *movie.StoreMovieInfoRequest) *movie.StoreMovieInfoResponse {
-    // slowpoke.SlowpokeCheck("storeMovieInfo");
 	movieId := movie.StoreMovieInfo(ctx, req.MovieId, req.Info, req.CastIds, req.PlotId)
 	//fmt.Println("Movie info stored for id: " + movieId)
 	resp := movie.StoreMovieInfoResponse{MovieId: movieId}
@@ -29,7 +27,6 @@ func storeMovieInfo(ctx context.Context, req *movie.StoreMovieInfoRequest) *movi
 }
 
 func readMovieInfo(ctx context.Context, req *movie.ReadMovieInfoRequest) *movie.ReadMovieInfoResponse {
-    // slowpoke.SlowpokeCheck("readMovieInfo");
 	movieInfo := movie.ReadMovieInfo(ctx, req.MovieId)
 	//fmt.Printf("Movie info read: %v\n", movieInfo)
 	resp := movie.ReadMovieInfoResponse{Info: movieInfo}
@@ -47,20 +44,6 @@ func populate() {
 	if err != nil {
 		panic(err)
 	}
-
-	// cast_json, err := os.ReadFile("/app/internal/movie/data/casts_1_500.json")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// var castData []map[string]interface{}
-	// err = json.Unmarshal(cast_json, &castData)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// casts = make(map[string]string)
-	// for _, cast := range castData {
-	// 	castId := strconv.Itoa(int(cast["id"].(float64)))
-	// 	name := cast["name"].(string)
 
 	movie_id := 0
 	for _, movie_ := range data {
@@ -81,12 +64,9 @@ func populate() {
 func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
 	populate()
-	slowpoke.SlowpokeInit()
 	http.HandleFunc("/heartbeat", heartbeat)
-	// http.HandleFunc("/store_movie_info", wrappers.NonROWrapper[movie.StoreMovieInfoRequest, movie.StoreMovieInfoResponse](storeMovieInfo))
-	http.HandleFunc("/store_movie_info", wrappers.SlowpokeWrapper[movie.StoreMovieInfoRequest, movie.StoreMovieInfoResponse](storeMovieInfo, "storeMovieInfo"))
-	// http.HandleFunc("/ro_read_movie_info", wrappers.ROWrapper[movie.ReadMovieInfoRequest, movie.ReadMovieInfoResponse](readMovieInfo))
-	http.HandleFunc("/ro_read_movie_info", wrappers.SlowpokeWrapper[movie.ReadMovieInfoRequest, movie.ReadMovieInfoResponse](readMovieInfo, "readMovieInfo"))
+	http.HandleFunc("/store_movie_info", wrappers.Wrapper[movie.StoreMovieInfoRequest, movie.StoreMovieInfoResponse](storeMovieInfo))
+	http.HandleFunc("/ro_read_movie_info", wrappers.Wrapper[movie.ReadMovieInfoRequest, movie.ReadMovieInfoResponse](readMovieInfo))
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		panic(err)

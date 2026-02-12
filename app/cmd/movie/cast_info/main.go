@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/movie"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/movie"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net/http"
 	"runtime"
 	"os"
@@ -21,7 +20,6 @@ func heartbeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func storeCastInfo(ctx context.Context, req *movie.StoreCastInfoRequest) *movie.StoreCastInfoResponse {
-    // slowpoke.SlowpokeCheck("storeCastInfo");
 	movieId := movie.StoreCastInfo(ctx, req.CastId, req.Name, req.Info)
 	//fmt.Println("Movie info stored for id: " + movieId)
 	resp := movie.StoreCastInfoResponse{CastId: movieId}
@@ -29,7 +27,6 @@ func storeCastInfo(ctx context.Context, req *movie.StoreCastInfoRequest) *movie.
 }
 
 func readCastInfos(ctx context.Context, req *movie.ReadCastInfosRequest) *movie.ReadCastInfosResponse {
-    // slowpoke.SlowpokeCheck("readCastInfos");
 	castInfos := movie.ReadCastInfos(ctx, req.CastIds)
 	//fmt.Printf("Movie info read: %v\n", movieInfo)
 	resp := movie.ReadCastInfosResponse{Infos: castInfos}
@@ -59,10 +56,9 @@ func populate() {
 func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
 	populate()
-	slowpoke.SlowpokeInit()
 	http.HandleFunc("/heartbeat", heartbeat)
-	http.HandleFunc("/store_cast_info", wrappers.SlowpokeWrapper[movie.StoreCastInfoRequest, movie.StoreCastInfoResponse](storeCastInfo, "storeCastInfo"))
-	http.HandleFunc("/ro_read_cast_infos", wrappers.SlowpokeWrapper[movie.ReadCastInfosRequest, movie.ReadCastInfosResponse](readCastInfos, "readCastInfos"))
+	http.HandleFunc("/store_cast_info", wrappers.Wrapper[movie.StoreCastInfoRequest, movie.StoreCastInfoResponse](storeCastInfo))
+	http.HandleFunc("/ro_read_cast_infos", wrappers.Wrapper[movie.ReadCastInfosRequest, movie.ReadCastInfosResponse](readCastInfos))
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		panic(err)

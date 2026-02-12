@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/movie"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/movie"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net/http"
 	"runtime"
 	"os"
@@ -22,7 +21,6 @@ func heartbeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func writePlot(ctx context.Context, req *movie.WritePlotRequest) *movie.WritePlotResponse {
-    // slowpoke.SlowpokeCheck("writePlot");
 	plotId := movie.WritePlot(ctx, req.PlotId, req.Plot)
 	//fmt.Println("Movie info stored for id: " + movieId)
 	resp := movie.WritePlotResponse{PlotId: plotId}
@@ -30,7 +28,6 @@ func writePlot(ctx context.Context, req *movie.WritePlotRequest) *movie.WritePlo
 }
 
 func readPlot(ctx context.Context, req *movie.ReadPlotRequest) *movie.ReadPlotResponse {
-    // slowpoke.SlowpokeCheck("readPlot");
 	plot := movie.ReadPlot(ctx, req.PlotId)
 	//fmt.Printf("Movie info read: %v\n", movieInfo)
 	resp := movie.ReadPlotResponse{Plot: plot}
@@ -61,12 +58,9 @@ func populate() {
 func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
 	populate()
-	slowpoke.SlowpokeInit()
 	http.HandleFunc("/heartbeat", heartbeat)
-	// http.HandleFunc("/write_plot", wrappers.NonROWrapper[movie.WritePlotRequest, movie.WritePlotResponse](writePlot))
-	http.HandleFunc("/write_plot", wrappers.SlowpokeWrapper[movie.WritePlotRequest, movie.WritePlotResponse](writePlot, "writePlot"))
-	// http.HandleFunc("/ro_read_plot", wrappers.ROWrapper[movie.ReadPlotRequest, movie.ReadPlotResponse](readPlot))
-	http.HandleFunc("/ro_read_plot", wrappers.SlowpokeWrapper[movie.ReadPlotRequest, movie.ReadPlotResponse](readPlot, "readPlot"))
+	http.HandleFunc("/write_plot", wrappers.Wrapper[movie.WritePlotRequest, movie.WritePlotResponse](writePlot))
+	http.HandleFunc("/ro_read_plot", wrappers.Wrapper[movie.ReadPlotRequest, movie.ReadPlotResponse](readPlot))
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		panic(err)

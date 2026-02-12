@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/eniac/mucache/internal/movie"
-	"github.com/eniac/mucache/pkg/slowpoke"
-	"github.com/eniac/mucache/pkg/wrappers"
+	"github.com/atlas/slowpoke/internal/movie"
+	"github.com/atlas/slowpoke/pkg/wrappers"
 	"net/http"
 	"runtime"
 )
@@ -18,7 +17,6 @@ func heartbeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func composeReview(ctx context.Context, req *movie.ComposeReviewRequest) *movie.ComposeReviewResponse {
-    // slowpoke.SlowpokeCheck("composeReview");
 	movie.ComposeReview(ctx, req.Review)
 	//fmt.Printf("Page read: %v\n", page)
 	resp := movie.ComposeReviewResponse{Ok: "OK"}
@@ -27,10 +25,8 @@ func composeReview(ctx context.Context, req *movie.ComposeReviewRequest) *movie.
 
 func main() {
 	fmt.Println(runtime.GOMAXPROCS(8))
-	slowpoke.SlowpokeInit()
 	http.HandleFunc("/heartbeat", heartbeat)
-	// http.HandleFunc("/compose_review", wrappers.NonROWrapper[movie.ComposeReviewRequest, movie.ComposeReviewResponse](composeReview))
-	http.HandleFunc("/compose_review", wrappers.SlowpokeWrapper[movie.ComposeReviewRequest, movie.ComposeReviewResponse](composeReview, "composeReview"))
+	http.HandleFunc("/compose_review", wrappers.Wrapper[movie.ComposeReviewRequest, movie.ComposeReviewResponse](composeReview))
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		panic(err)

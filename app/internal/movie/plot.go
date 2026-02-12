@@ -2,16 +2,16 @@ package movie
 
 import (
 	"context"
-	"github.com/eniac/mucache/pkg/slowpoke"
+	"github.com/atlas/slowpoke/pkg/state"
 )
 
 func WritePlot(ctx context.Context, plotId string, plot string) string {
-	slowpoke.SetState(ctx, plotId, plot)
+	state.SetState(ctx, plotId, plot)
 	return plotId
 }
 
 func ReadPlot(ctx context.Context, plotId string) string {
-	plot, err := slowpoke.GetState[string](ctx, plotId)
+	plot, err := state.GetState[string](ctx, plotId)
 	if err != nil {
 		panic(err)
 	}
